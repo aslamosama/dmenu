@@ -39,6 +39,9 @@ Personal build of dmenu generated using [dmenu-flexipatch](https://github.com/ba
    - [mouse-support](https://tools.suckless.org/dmenu/patches/mouse-support/)
       - adds basic mouse support for dmenu
 
+   - [motion-support](https://tools.suckless.org/dmenu/patches/mouse-support/)
+      - Expands the above to support mouse hovering.
+
    - [password](https://tools.suckless.org/dmenu/patches/password/)
       - with this patch dmenu will not directly display the keyboard input, but instead replace it
         with dots

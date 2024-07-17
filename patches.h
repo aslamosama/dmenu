@@ -143,7 +143,7 @@
 /* Expands the above to support mouse hovering.
  * https://tools.suckless.org/dmenu/patches/mouse-support/
  */
-#define MOTION_SUPPORT_PATCH 0
+#define MOTION_SUPPORT_PATCH 1
 
 /* Without this patch when you press Ctrl+Enter dmenu just outputs current item and it is not
  * possible to undo that.
