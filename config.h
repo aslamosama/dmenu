@@ -1,5 +1,6 @@
 /* See LICENSE file for copyright and license details. */
 /* Default settings; can be overriden by command line. */
+#include "patches.h"
 
 static int topbar = 1;                      /* -b  option; if 0, dmenu appears at bottom */
 #if ALPHA_PATCH
