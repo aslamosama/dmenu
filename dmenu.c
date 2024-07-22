@@ -178,15 +178,6 @@ static Clr *scheme[SchemeLast];
 
 #include "config.h"
 
-#if CASEINSENSITIVE_PATCH
-static char * cistrstr(const char *s, const char *sub);
-static int (*fstrncmp)(const char *, const char *, size_t) = strncasecmp;
-static char *(*fstrstr)(const char *, const char *) = cistrstr;
-#else
-static int (*fstrncmp)(const char *, const char *, size_t) = strncmp;
-static char *(*fstrstr)(const char *, const char *) = strstr;
-#endif // CASEINSENSITIVE_PATCH
-
 static unsigned int
 textw_clamp(const char *str, unsigned int n)
 {
@@ -215,6 +206,14 @@ static void readstdin(void);
 static void run(void);
 static void setup(void);
 static void usage(void);
+
+#if CASEINSENSITIVE_PATCH
+static int (*fstrncmp)(const char *, const char *, size_t) = strncasecmp;
+static char *(*fstrstr)(const char *, const char *) = cistrstr;
+#else
+static int (*fstrncmp)(const char *, const char *, size_t) = strncmp;
+static char *(*fstrstr)(const char *, const char *) = strstr;
+#endif // CASEINSENSITIVE_PATCH
 
 #include "patch/include.c"
 
@@ -270,6 +269,9 @@ cleanup(void)
 	size_t i;
 
 	XUngrabKey(dpy, AnyKey, AnyModifier, root);
+	#if INPUTMETHOD_PATCH
+	XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
+	#endif // INPUTMETHOD_PATCH
 	for (i = 0; i < SchemeLast; i++)
 		free(scheme[i]);
 	for (i = 0; items && items[i].text; ++i)
@@ -1506,7 +1508,6 @@ run(void)
 	#if PRESELECT_PATCH
 	int i;
 	#endif // PRESELECT_PATCH
-
 	while (!XNextEvent(dpy, &ev)) {
 		#if PRESELECT_PATCH
 		if (preselected) {
@@ -1520,8 +1521,15 @@ run(void)
 			preselected = 0;
 		}
 		#endif // PRESELECT_PATCH
+		#if INPUTMETHOD_PATCH
+		if (XFilterEvent(&ev, None))
+			continue;
+		if (composing)
+			continue;
+		#else
 		if (XFilterEvent(&ev, win))
 			continue;
+		#endif // INPUTMETHOD_PATCH
 		switch(ev.type) {
 		#if MOUSE_SUPPORT_PATCH
 		case ButtonPress:
@@ -1788,13 +1796,16 @@ setup(void)
 			(unsigned char *) &dock, 1);
 	#endif // WMTYPE_PATCH
 
-
 	/* input methods */
 	if ((xim = XOpenIM(dpy, NULL, NULL, NULL)) == NULL)
 		die("XOpenIM failed: could not open input device");
 
+	#if INPUTMETHOD_PATCH
+	init_input_method(xim);
+	#else
 	xic = XCreateIC(xim, XNInputStyle, XIMPreeditNothing | XIMStatusNothing,
 	                XNClientWindow, win, XNFocusWindow, win, NULL);
+	#endif // INPUTMETHOD_PATCH
 
 	#if MANAGED_PATCH
 	if (managed) {
@@ -1816,8 +1827,13 @@ setup(void)
 				XSelectInput(dpy, dws[i], FocusChangeMask);
 			XFree(dws);
 		}
+		#if !INPUTMETHOD_PATCH
 		grabfocus();
+		#endif // INPUTMETHOD_PATCH
 	}
+	#if INPUTMETHOD_PATCH
+	grabfocus();
+	#endif // INPUTMETHOD_PATCH
 	drw_resize(drw, mw, mh);
 	drawmenu();
 }
@@ -1933,6 +1949,10 @@ main(int argc, char *argv[])
 	#if XRESOURCES_PATCH
 	if (!setlocale(LC_CTYPE, "") || !XSupportsLocale())
 		fputs("warning: no locale support\n", stderr);
+	#if INPUTMETHOD_PATCH
+	if (!XSetLocaleModifiers(""))
+		fputs("warning: could not set locale modifiers", stderr);
+	#endif // INPUTMETHOD_PATCH
 	if (!(dpy = XOpenDisplay(NULL)))
 		die("cannot open display");
 
@@ -2165,6 +2185,10 @@ main(int argc, char *argv[])
 	#else // !XRESOURCES_PATCH
 	if (!setlocale(LC_CTYPE, "") || !XSupportsLocale())
 		fputs("warning: no locale support\n", stderr);
+	#if INPUTMETHOD_PATCH
+	if (!XSetLocaleModifiers(""))
+		fputs("warning: could not set locale modifiers", stderr);
+	#endif // INPUTMETHOD_PATCH
 	if (!(dpy = XOpenDisplay(NULL)))
 		die("cannot open display");
 	screen = DefaultScreen(dpy);
