@@ -113,7 +113,7 @@
 /* This patch adds an option to provide preselected text.
  * https://tools.suckless.org/dmenu/patches/initialtext/
  */
-#define INITIALTEXT_PATCH 0
+#define INITIALTEXT_PATCH 1
 
 /* Adds support for input methods (fctix, ibus, etc.) allowing the user to change the
  * keyboard layout while dmenu is open.

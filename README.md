@@ -28,6 +28,9 @@ Personal build of dmenu generated using [dmenu-flexipatch](https://github.com/ba
    - [gridnav](https://tools.suckless.org/dmenu/patches/gridnav/)
       - adds the ability to move left and right through a grid (when using the grid patch)
 
+   - [initialtext](https://tools.suckless.org/dmenu/patches/initialtext/)
+      - adds a new flag `-it` to provide preselected text
+
    - [instant](https://tools.suckless.org/dmenu/patches/instant/)
       - adds a flag that will cause dmenu to select an item immediately if there is only one
         matching option left
