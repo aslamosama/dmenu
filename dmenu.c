@@ -279,7 +279,7 @@ cleanup(void)
 	XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
 	#endif // INPUTMETHOD_PATCH
 	for (i = 0; i < SchemeLast; i++)
-		free(scheme[i]);
+		drw_scm_free(drw, scheme[i], 2);
 	for (i = 0; items && items[i].text; ++i) {
 		#if SEPARATOR_PATCH
 		free(separator_reverse ? items[i].text_output : items[i].text);
@@ -645,12 +645,26 @@ drawmenu(void)
 	rpad += border_width;
 	#endif // BORDER_PATCH
 	#endif // NUMBERS_PATCH
+
+	#if QUIET_PATCH
+	if (quiet && strlen(text) == 0) {
+		#if DYNAMIC_HEIGHT_PATCH
+		if (lines > 0)
+			XResizeWindow(dpy, win, mw, bh);
+		#endif // DYNAMIC_HEIGHT_PATCH
+		goto skip_item_listing;
+	}
+	#endif // QUIET_PATCH
+
 	if (lines > 0) {
+		#if DYNAMIC_HEIGHT_PATCH || GRID_PATCH
+		int i = 0;
+		#endif // DYNAMIC_HEIGHT_PATCH | GRID_PATCH
+
 		#if GRID_PATCH
 		/* draw grid */
-		int i = 0;
-		for (item = curr; item != next; item = item->right, i++)
-			if (columns)
+		for (item = curr; item != next; item = item->right, i++) {
+			if (columns) {
 				#if VERTFULL_PATCH
 				drawitem(
 					item,
@@ -666,20 +680,37 @@ drawmenu(void)
 					(mw - x) / columns
 				);
 				#endif // VERTFULL_PATCH
-			else
+			} else {
 				#if VERTFULL_PATCH
 				drawitem(item, 0, y += bh, mw);
 				#else
 				drawitem(item, x, y += bh, mw - x);
 				#endif // VERTFULL_PATCH
+			}
+		}
+		#if DYNAMIC_HEIGHT_PATCH
+		if (columns) {
+			XResizeWindow(dpy, win, mw, (MIN(i, lines) + 1) * bh);
+		} else {
+			XResizeWindow(dpy, win, mw, (i + 1) * bh);
+		}
+		#endif // DYNAMIC_HEIGHT_PATCH
+
 		#else
 		/* draw vertical list */
-		for (item = curr; item != next; item = item->right)
+		for (item = curr; item != next; item = item->right) {
+			#if DYNAMIC_HEIGHT_PATCH
+			i++;
+			#endif // DYNAMIC_HEIGHT_PATCH
 			#if VERTFULL_PATCH
 			drawitem(item, 0, y += bh, mw);
 			#else
 			drawitem(item, x, y += bh, mw - x);
 			#endif // VERTFULL_PATCH
+		}
+		#if DYNAMIC_HEIGHT_PATCH
+		XResizeWindow(dpy, win, mw, (i + 1) * bh);
+		#endif // DYNAMIC_HEIGHT_PATCH
 		#endif // GRID_PATCH
 	} else if (matches) {
 		/* draw horizontal list */
@@ -735,6 +766,11 @@ drawmenu(void)
 			);
 		}
 	}
+
+	#if QUIET_PATCH
+skip_item_listing:
+	#endif // QUIET_PATCH
+
 	#if NUMBERS_PATCH
 	drw_setscheme(drw, scheme[SchemeNorm]);
 	#if PANGO_PATCH
@@ -1934,6 +1970,9 @@ usage(void)
 		#if !NON_BLOCKING_STDIN_PATCH
 		"f"
 		#endif // NON_BLOCKING_STDIN_PATCH
+		#if QUIET_PATCH
+		"q"
+		#endif // QUIET_PATCH
 		#if INCREMENTAL_PATCH
 		"r"
 		#endif // INCREMENTAL_PATCH
@@ -2102,6 +2141,10 @@ main(int argc, char *argv[])
 		} else if (!strcmp(argv[i], "-r")) { /* incremental */
 			incremental = !incremental;
 		#endif // INCREMENTAL_PATCH
+		#if QUIET_PATCH
+		} else if (!strcmp(argv[i], "-q")) { /* quiet, don't list items if search is empty */
+			quiet = !quiet;
+		#endif // QUIET_PATCH
 		#if CASEINSENSITIVE_PATCH
 		} else if (!strcmp(argv[i], "-s")) { /* case-sensitive item matching */
 			fstrncmp = strncmp;
