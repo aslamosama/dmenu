@@ -733,7 +733,7 @@ drawmenu(void)
 		XResizeWindow(dpy, win, mw, (i + 1) * bh);
 		#endif // DYNAMIC_HEIGHT_PATCH
 		#endif // GRID_PATCH
-	} else if (matches) {
+	} else if (matches && curr) {
 		/* draw horizontal list */
 		x += inputw;
 		#if SYMBOLS_PATCH
@@ -1249,7 +1249,7 @@ keypress(XKeyEvent *ev)
 	switch(ksym) {
 	default:
 insert:
-		if (!iscntrl((unsigned char)*buf))
+		if (len > 0 && !iscntrl((unsigned char)*buf))
 			insert(buf, len);
 		break;
 	case XK_Delete:
@@ -1780,6 +1780,8 @@ setup(void)
 #ifdef XINERAMA
 	i = 0;
 	if (parentwin == root && (info = XineramaQueryScreens(dpy, &n))) {
+		if (n < 1)
+			die("Xinerama reported no screens");
 		XGetInputFocus(dpy, &w, &di);
 		if (mon >= 0 && mon < n)
 			i = mon;
@@ -1802,6 +1804,9 @@ setup(void)
 			for (i = 0; i < n; i++)
 				if (INTERSECT(x, y, 1, 1, info[i]) != 0)
 					break;
+		/* fallback to the first screen if there is no intersection */
+		if (i >= n)
+			i = 0;
 
 		#if CENTER_PATCH
 		if (center) {
